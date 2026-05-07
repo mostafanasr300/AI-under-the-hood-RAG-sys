@@ -10,50 +10,54 @@ A high-performance, autonomous Knowledge Engine built with **LangGraph**, **Hybr
 
 ## 🚀 Key Features
 
-*   **🔍 Hybrid Retrieval Architecture:** Combines dense semantic search (**FAISS**) with sparse keyword search (**BM25**) fused by **Reciprocal Rank Fusion (RRF)**.
-*   **🎯 Cross-Encoder Reranking:** Uses `ms-marco-MiniLM-L-6-v2` to mathematically rank retrieved documents, dropping anything with a relevance score below -4.0.
-*   **🧠 Multi-Agent Orchestration:** 
-    *   **Router:** Extracts technical topics.
-    *   **Analyst:** Performs targeted internal retrieval.
-    *   **Synthesizer:** Crafts high-fidelity technical responses.
-    *   **Reviewer (The Auditor):** Evaluates responses for gaps and triggers emergency fallback loops.
-*   **🚑 Emergency Web Fallback:** Automatically executes a surgical **Tavily Web Search** if internal PDFs don't contain the answer.
-*   **📊 Industrial Evaluation:** Real-time scoring using **DeepEval** (Faithfulness, Relevance, Precision, Recall) with **Llama-3.3-70b** as the judge.
+* **🔍 Hybrid Retrieval Architecture:** Combines dense semantic search (**FAISS**) with sparse keyword search (**BM25**) fused by **Reciprocal Rank Fusion (RRF)**.
+* **🎯 Cross-Encoder Reranking:** Uses `ms-marco-MiniLM-L-6-v2` to mathematically rank retrieved documents, dropping anything with a relevance score below -4.0.
+* **🧠 Multi-Agent Orchestration:**
+  * **Router:** Extracts technical topics.
+  * **Analyst:** Performs targeted internal retrieval.
+  * **Synthesizer:** Crafts high-fidelity technical responses.
+  * **Reviewer (The Auditor):** Evaluates responses for gaps and triggers emergency fallback loops.
+* **🚑 Emergency Web Fallback:** Automatically executes a surgical **Tavily Web Search** if internal PDFs don't contain the answer.
+* **📊 Industrial Evaluation:** Real-time scoring using **DeepEval** (Faithfulness, Relevance, Precision, Recall) with **Llama-3.3-70b** as the judge.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Framework:** LangGraph / LangChain
-- **LLMs:** Groq (Llama-3.1-8b for speed, Llama-3.3-70b for evaluation)
-- **Vector DB:** FAISS
-- **Retrieval:** BM25 + Cross-Encoder Reranking
-- **Web Search:** Tavily API
-- **UI:** Streamlit (Custom Glassmorphism Design)
+* **Framework:** LangGraph / LangChain
+* **LLMs:** Groq (Llama-3.1-8b for speed, Llama-3.3-70b for evaluation)
+* **Vector DB:** FAISS
+* **Retrieval:** BM25 + Cross-Encoder Reranking
+* **Web Search:** Tavily API
+* **UI:** Streamlit (Custom Glassmorphism Design)
 
 ---
 
 ## 📦 Installation & Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/mostafanasr300/AI-under-the-hood-RAG-sys.git
    cd AI-under-the-hood-RAG-sys
    ```
 
 2. **Create a Virtual Environment:**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: .\venv\Scripts\activate
    ```
 
 3. **Install Dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Environment Variables:**
    Create a `.env` file and add your keys:
+
    ```env
    GROQ_API_KEY=your_key_here
    TAVILY_API_KEY=your_key_here
@@ -64,13 +68,17 @@ A high-performance, autonomous Knowledge Engine built with **LangGraph**, **Hybr
 ## 🖥️ Usage
 
 ### Run the Dashboard (Recommended)
+
 Launch the premium Streamlit interface to query your data and see the agentic journey in real-time.
+
 ```bash
 streamlit run app.py
 ```
 
 ### Run Batch Evaluation
+
 Execute the DeepEval test suite to measure system performance across the 7-query benchmark.
+
 ```bash
 python evaluate_rag.py
 ```
@@ -78,15 +86,18 @@ python evaluate_rag.py
 ---
 
 ## 📊 Evaluation Metrics explained
+
 This system uses **DeepEval** to ensure zero hallucinations:
-*   **Faithfulness:** Measures if the answer is derived *only* from the retrieved context.
-*   **Contextual Recall:** Checks if the retriever found all the facts present in the ground truth.
-*   **Contextual Precision:** Ensures the most relevant documents are ranked at the very top.
-*   **Contextual Relevancy:** Judges if the retrieved snippets actually match the user's intent.
+
+* **Faithfulness:** Measures if the answer is derived *only* from the retrieved context.
+* **Contextual Recall:** Checks if the retriever found all the facts present in the ground truth.
+* **Contextual Precision:** Ensures the most relevant documents are ranked at the very top.
+* **Contextual Relevancy:** Judges if the retrieved snippets actually match the user's intent.
 
 ---
 
 ## 🗺️ Architecture Diagram
+
 ```mermaid
 graph TD
     A[User Query] --> B[Router Agent]
@@ -98,7 +109,3 @@ graph TD
     G -- Gaps Detected --> H[Emergency Web Agent]
     H --> F
     G -- PASSED --> I[Final Answer]
-```
-
----
-*Created by Antigravity AI for Mostafa Nasr.*
