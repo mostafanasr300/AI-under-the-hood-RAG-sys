@@ -100,5 +100,3 @@ graph TD
     G -- PASSED --> I[Final Answer]
 ```
 
----
-*Created by Antigravity AI for Mostafa Nasr.*
