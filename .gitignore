@@ -1,0 +1,26 @@
+# Virtual Environment
+agentic_venv/
+venv/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# RAG Data & Cache
+faiss_index/
+faiss_index_cache/
+Companies_reports/
+bm25_cache.json
+embedding_cache.json
+.deepeval/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

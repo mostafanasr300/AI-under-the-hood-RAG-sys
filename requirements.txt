@@ -1,0 +1,15 @@
+langchain
+langgraph
+langchain-groq
+langchain-community
+faiss-cpu
+rank-bm25
+sentence-transformers
+deepeval
+tavily-python
+python-dotenv
+pypdf
+
+langchain-huggingface
+langchain-text-splitters
+streamlit
