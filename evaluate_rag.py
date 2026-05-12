@@ -105,7 +105,7 @@ def extract_context_chunks(context_string):
 
 def run_evaluation():
     print("="*60)
-    print("🧪 RUNNING RAG EVALUATION (DEEPEVAL FRAMEWORK)")
+    print("RUNNING RAG EVALUATION (DEEPEVAL FRAMEWORK)")
     print("="*60 + "\n")
     
     test_cases = []
@@ -114,7 +114,7 @@ def run_evaluation():
         query = item["query"]
         truth = item["ground_truth"]
         
-        print(f"🔄 Processing Query {i+1}/{len(EVAL_DATASET)}: '{query}'")
+        print(f"Processing Query {i+1}/{len(EVAL_DATASET)}: '{query}'")
         
         # 1. Run our Hybrid RAG Pipeline
         try:
@@ -122,7 +122,7 @@ def run_evaluation():
             context_string = state.get("context_data", "")
             answer = state.get("final_report", "")
         except Exception as e:
-            print(f"   ❌ Pipeline failed: {e}")
+            print(f" Pipeline failed: {e}")
             continue
             
         # 2. Extract list of chunks
@@ -136,10 +136,10 @@ def run_evaluation():
             retrieval_context=context_chunks
         )
         test_cases.append(test_case)
-        print("   ✅ Fetched pipeline response & context.\n")
+        print(" Fetched pipeline response & context.\n")
 
     # Instantiate Metrics
-    print("⏳ Initializing DeepEval Metrics using Groq LLM...")
+    print("Initializing DeepEval Metrics using Groq LLM...")
     metrics = [
         ContextualRelevancyMetric(threshold=0.5, model=custom_eval_model, include_reason=True),
         ContextualPrecisionMetric(threshold=0.5, model=custom_eval_model, include_reason=True),
@@ -148,26 +148,26 @@ def run_evaluation():
     ]
     
     # 4. RUN SEQUENTIAL EVALUATION
-    print("\n🚀 Starting Sequential Evaluation (Throttling 40s per metric to respect Groq limit)...")
+    print("\n Starting Sequential Evaluation (Throttling 40s per metric to respect Groq limit)...")
     
     final_results = []
     
     for i, test_case in enumerate(test_cases):
-        print(f"\n📊 Evaluating Test Case #{i+1}...")
+        print(f"\n Evaluating Test Case #{i+1}...")
         case_scores = {"query": test_case.input}
         
         for metric in metrics:
             metric_name = metric.__class__.__name__
-            print(f"   ⏳ Measuring {metric_name}...")
+            print(f"Measuring {metric_name}...")
             
             try:
                 # Measure metric
                 metric.measure(test_case)
                 case_scores[metric_name] = metric.score
                 case_scores[f"{metric_name}_reason"] = getattr(metric, 'reason', 'N/A')
-                print(f"      ✅ Score: {metric.score}")
+                print(f"Score: {metric.score}")
             except Exception as e:
-                print(f"      ❌ Error: {e}")
+                print(f"Error: {e}")
                 case_scores[metric_name] = 0.0
                 
             # Wait 40 seconds between EVERY metric call to stay under 6000 TPM
@@ -177,7 +177,7 @@ def run_evaluation():
 
     # 5. FINAL REPORT
     print("\n" + "="*60)
-    print("🏆 FINAL EVALUATION REPORT")
+    print("  FINAL EVALUATION REPORT")
     print("="*60)
     
     for res in final_results:

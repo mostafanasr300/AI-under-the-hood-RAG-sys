@@ -8,11 +8,7 @@ import warnings
 import numpy as np
 from typing import List, TypedDict
 
-# Fix Windows console encoding for emoji/unicode output
-sys.stdout.reconfigure(encoding="utf-8")
-sys.stderr.reconfigure(encoding="utf-8")
 
-# Suppress annoying HuggingFace and LangChain FutureWarnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -111,7 +107,7 @@ class HybridRetriever:
 
         if not combined:
             # Fallback: return raw FAISS top-k if both gates killed everything
-            print("      [GATE]   ⚠️ Both gates empty — falling back to raw FAISS top-k")
+            print("      [GATE]   Both gates empty — falling back to raw FAISS top-k")
             return [doc for doc, _ in faiss_results[:self.final_k]]
 
         print(f"      [RRF]    {len(combined)} unique candidates after fusion")
@@ -130,7 +126,7 @@ class HybridRetriever:
         final_docs = [doc for doc, score in ranked if score >= -4.0]
         
         if not final_docs:
-            print("      [RERANK] ⚠️ All documents scored worse than -4. Local data is irrelevant!")
+            print("      [RERANK] All documents scored worse than -4. Local data is irrelevant!")
 
         return final_docs[:self.final_k]
 
@@ -211,7 +207,7 @@ def build_knowledge_base():
         norm = os.path.normpath(f)
         current_hashes[norm] = compute_file_hash(f)
 
-    print(f"📂 Found {len(pdf_files)} PDF(s) across data categories.")
+    print(f"Found {len(pdf_files)} PDF(s) across data categories.")
 
     # --- Load cached hashes (if any) ---
     cached_hashes = {}
@@ -229,13 +225,13 @@ def build_knowledge_base():
 
     # --- Status report ---
     if new_files:
-        print(f"   🆕  New files:      {[os.path.basename(f) for f in new_files]}")
+        print(f"   New files:      {[os.path.basename(f) for f in new_files]}")
     if modified_files:
-        print(f"   ✏️  Modified files: {[os.path.basename(f) for f in modified_files]}")
+        print(f"   Modified files: {[os.path.basename(f) for f in modified_files]}")
     if deleted_files:
-        print(f"   🗑️  Deleted files:  {[os.path.basename(f) for f in deleted_files]}")
+        print(f"   Deleted files:  {[os.path.basename(f) for f in deleted_files]}")
     if unchanged_files:
-        print(f"   ✅ Unchanged:       {[os.path.basename(f) for f in unchanged_files]}")
+        print(f"   Unchanged:       {[os.path.basename(f) for f in unchanged_files]}")
 
     cache_exists = os.path.exists(INDEX_FILE)
     chunks_cached = os.path.exists(CHUNKS_FILE)
@@ -243,16 +239,16 @@ def build_knowledge_base():
 
     # ---- FAST PATH: nothing changed ----
     if not files_to_embed and not deleted_files and cache_exists and chunks_cached:
-        print("⚡ All files unchanged — loading from cache...")
+        print("All files unchanged — loading from cache...")
         vectorstore = FAISS.load_local(CACHE_DIR, embeddings,
                                        allow_dangerous_deserialization=True)
         with open(CHUNKS_FILE, "rb") as f:
             all_documents = pickle.load(f)
-        print(f"   Loaded {len(all_documents)} cached chunks for BM25.")
+        print(f"Loaded {len(all_documents)} cached chunks for BM25.")
 
     # ---- FULL REBUILD: modifications or deletions detected ----
     elif deleted_files or modified_files:
-        print("🔄 Modifications/deletions detected — full rebuild required...")
+        print("Modifications/deletions detected — full rebuild required...")
         files_to_embed = list(current_hashes.keys())
         vectorstore, all_documents = _process_and_build(
             files_to_embed, embeddings, None)
@@ -261,7 +257,7 @@ def build_knowledge_base():
 
     # ---- MERGE PATH: only brand-new files ----
     elif new_files and cache_exists and chunks_cached:
-        print(f"📥 Embedding {len(new_files)} new file(s) only — merging...")
+        print(f"Embedding {len(new_files)} new file(s) only — merging...")
         existing_store = FAISS.load_local(CACHE_DIR, embeddings,
                                           allow_dangerous_deserialization=True)
         with open(CHUNKS_FILE, "rb") as f:
@@ -274,7 +270,7 @@ def build_knowledge_base():
 
     # ---- FIRST-TIME BUILD ----
     else:
-        print("🏗️  Building index from scratch...")
+        print("Building index from scratch...")
         files_to_embed = list(current_hashes.keys())
         vectorstore, all_documents = _process_and_build(
             files_to_embed, embeddings, None)
@@ -282,15 +278,15 @@ def build_knowledge_base():
                     current_hashes, HASH_FILE, CHUNKS_FILE)
 
     # --- Build BM25 from document chunks (always fast, no embedding needed) ---
-    print("🔤 Building BM25 keyword index...")
+    print("Building BM25 keyword index...")
     tokenized_corpus = [doc.page_content.lower().split() for doc in all_documents]
     bm25_index = BM25Okapi(tokenized_corpus)
-    print(f"   BM25 index built over {len(all_documents)} chunks.")
+    print(f"BM25 index built over {len(all_documents)} chunks.")
 
     # --- Load Cross-Encoder reranker ---
-    print("🎯 Loading Cross-Encoder reranker (ms-marco-MiniLM-L-6-v2)...")
+    print("Loading Cross-Encoder reranker (ms-marco-MiniLM-L-6-v2)...")
     cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-    print("   Cross-Encoder ready.\n")
+    print("Cross-Encoder ready.\n")
 
     # --- Assemble the Hybrid Retriever ---
     retriever = HybridRetriever(
@@ -320,20 +316,20 @@ def _process_and_build(files_to_embed, embeddings, existing_store):
                 doc.metadata["source_file"] = os.path.basename(file_path)
             docs.extend(file_docs)
         except Exception as e:
-            print(f"   ⚠️ Failed to load {file_path}: {e}")
+            print(f"Failed to load {file_path}: {e}")
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     documents = text_splitter.split_documents(docs)
-    print(f"   📄 Processed {len(documents)} chunks from {len(files_to_embed)} file(s).")
+    print(f"Processed {len(documents)} chunks from {len(files_to_embed)} file(s).")
 
     if existing_store is not None:
         new_store = FAISS.from_documents(documents, embeddings)
         existing_store.merge_from(new_store)
         vectorstore = existing_store
-        print("✅ Merged new embeddings into existing FAISS index.")
+        print("Merged new embeddings into existing FAISS index.")
     else:
         vectorstore = FAISS.from_documents(documents, embeddings)
-        print("✅ FAISS index built successfully.")
+        print("FAISS index built successfully.")
 
     return vectorstore, documents
 
@@ -346,7 +342,7 @@ def _save_cache(cache_dir, vectorstore, documents, hashes, hash_file, chunks_fil
         pickle.dump(documents, f)
     with open(hash_file, "w") as fh:
         json.dump(hashes, fh, indent=2)
-    print("💾 FAISS index + document chunks + file hashes cached locally.")
+    print("FAISS index + document chunks + file hashes cached locally.")
 
 
 # --- Boot ---
@@ -378,7 +374,7 @@ llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0.2,
 
 def router_agent_node(state: AgentState):
     """Agent 1: Extracts key AI / Math topics from the user query."""
-    print("=> 🧠 Routing Agent: Analysing the query...")
+    print(" Routing Agent: Analysing the query...")
     prompt = ChatPromptTemplate.from_template(
         "You are a routing assistant for an AI & Mathematics knowledge base.\n"
         "The knowledge base covers two categories:\n"
@@ -403,7 +399,7 @@ def router_agent_node(state: AgentState):
 
 def internal_analyst_node(state: AgentState):
     """Agent 2: Searches the hybrid knowledge base (BM25 + FAISS + Reranker)."""
-    print("=> 📚 Internal Analyst: Hybrid retrieval in progress...")
+    print(" Internal Analyst: Hybrid retrieval in progress...")
     current_context = state.get("context_data", "")
     
     # Do exactly ONE targeted retrieval using the raw user query for best Cross-Encoder accuracy
@@ -425,11 +421,11 @@ def internal_analyst_node(state: AgentState):
 
 def synthesizer_node(state: AgentState):
     """Agent 4: Combines all context into a coherent technical explanation."""
-    print("=> 📝 Synthesizer Agent: Crafting the response...")
+    print("Synthesizer Agent: Crafting the response...")
     
     # HARD SHORT-CIRCUIT: Prevent LLM hallucination entirely if no data was found
     if not state.get("context_data", "").strip():
-        print("   [Synthesizer] ⚠️ Context is empty. Bypassing LLM to enforce strict fallback.")
+        print("   [Synthesizer]     Context is empty. Bypassing LLM to enforce strict fallback.")
         return {"final_report": f"INSUFFICIENT_DATA: {state['user_query']}"}
         
     prompt = ChatPromptTemplate.from_template(
@@ -458,7 +454,7 @@ def synthesizer_node(state: AgentState):
 
 def reviewer_node(state: AgentState):
     """Agent 5: Reviews the response for completeness and accuracy."""
-    print("=> 🔍 Reviewer Agent: Auditing the response...")
+    print(" Reviewer Agent: Auditing the response...")
     loop_count = state.get("loop_count", 0)
 
     if loop_count >= 2:
@@ -497,14 +493,14 @@ def reviewer_node(state: AgentState):
         print("   [Reviewer] Response is complete. PASSED.")
         return {"needs_retry": False, "loop_count": loop_count + 1}
     else:
-        print(f"   [Reviewer] ❌ Gaps detected → Emergency Search: '{response}'")
+        print(f"   [Reviewer] Gaps detected → Emergency Search: '{response}'")
         return {"needs_retry": True, "new_search_query": response,
                 "loop_count": loop_count + 1}
 
 
 def emergency_web_node(state: AgentState):
     """Agent 6: Surgical web search for missing information."""
-    print("=> 🚑 Emergency Web Agent: Fetching missing data...")
+    print("Emergency Web Agent: Fetching missing data...")
     client = TavilyClient(api_key=get_env("TAVILY_API_KEY"))
     try:
         search = client.search(query=state["new_search_query"],
@@ -563,17 +559,17 @@ except Exception:
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
-    print("🤖 AI & MATHEMATICS KNOWLEDGE ENGINE")
+    print("   AI & MATHEMATICS KNOWLEDGE ENGINE")
     print("=" * 60)
-    print("📚 Math  : Linear Algebra, Calculus, Probability, Optimization")
-    print("🧠 ML    : DPO, GRPO, LoRA — research papers")
-    print("🔀 Hybrid: BM25 + FAISS + Cross-Encoder Reranker")
-    print("🔄 Self-Correcting Reviewer Loop Active")
+    print("  Math  : Linear Algebra, Calculus, Probability, Optimization")
+    print("  ML    : DPO, GRPO, LoRA — research papers")
+    print("  Hybrid: BM25 + FAISS + Cross-Encoder Reranker")
+    print("  Self-Correcting Reviewer Loop Active")
     print("Type 'exit' to quit.\n")
 
     while True:
         try:
-            user_input = input("👤 You: ")
+            user_input = input("You: ")
             if user_input.lower().strip() in ["exit", "quit", "q", "e"]:
                 break
             if not user_input.strip():
@@ -581,9 +577,9 @@ if __name__ == "__main__":
 
             state = app_multi_agent.invoke({"user_query": user_input})
 
-            print("\n📝 Final Response:")
+            print("\n   Final Response:")
             print(state["final_report"])
             print("-" * 60 + "\n")
 
         except Exception as e:
-            print(f"\n⚠️ Pipeline Error: {e}")
+            print(f"\nPipeline Error: {e}")

@@ -1,4 +1,4 @@
-# 🤖 AI Under The Hood: Agentic Hybrid RAG Engine
+# AI Under The Hood: Agentic Hybrid RAG Engine
 
 A high-performance, autonomous Knowledge Engine built with **LangGraph**, **Hybrid Retrieval (FAISS + BM25)**, and **DeepEval** metrics. This system features a self-correcting multi-agent loop that triggers emergency web searches when internal data is insufficient.
 
@@ -8,21 +8,21 @@ A high-performance, autonomous Knowledge Engine built with **LangGraph**, **Hybr
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-* **🔍 Hybrid Retrieval Architecture:** Combines dense semantic search (**FAISS**) with sparse keyword search (**BM25**) fused by **Reciprocal Rank Fusion (RRF)**.
-* **🎯 Cross-Encoder Reranking:** Uses `ms-marco-MiniLM-L-6-v2` to mathematically rank retrieved documents, dropping anything with a relevance score below -4.0.
-* **🧠 Multi-Agent Orchestration:**
+* **Hybrid Retrieval Architecture:** Combines dense semantic search (**FAISS**) with sparse keyword search (**BM25**) fused by **Reciprocal Rank Fusion (RRF)**.
+* **Cross-Encoder Reranking:** Uses `ms-marco-MiniLM-L-6-v2` to mathematically rank retrieved documents, dropping anything with a relevance score below -4.0.
+* **Multi-Agent Orchestration:**
   * **Router:** Extracts technical topics.
   * **Analyst:** Performs targeted internal retrieval.
   * **Synthesizer:** Crafts high-fidelity technical responses.
   * **Reviewer (The Auditor):** Evaluates responses for gaps and triggers emergency fallback loops.
-* **🚑 Emergency Web Fallback:** Automatically executes a surgical **Tavily Web Search** if internal PDFs don't contain the answer.
-* **📊 Industrial Evaluation:** Real-time scoring using **DeepEval** (Faithfulness, Relevance, Precision, Recall) with **Llama-3.3-70b** as the judge.
+* **Emergency Web Fallback:** Automatically executes a surgical **Tavily Web Search** if internal PDFs don't contain the answer.
+* **Industrial Evaluation:** Real-time scoring using **DeepEval** (Faithfulness, Relevance, Precision, Recall) with **Llama-3.3-70b** as the judge.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Framework:** LangGraph / LangChain
 * **LLMs:** Groq (Llama-3.1-8b for speed, Llama-3.3-70b for evaluation)
@@ -33,7 +33,7 @@ A high-performance, autonomous Knowledge Engine built with **LangGraph**, **Hybr
 
 ---
 
-## 📦 Installation & Setup
+## Installation & Setup
 
 1. **Clone the repository:**
 
@@ -65,7 +65,7 @@ A high-performance, autonomous Knowledge Engine built with **LangGraph**, **Hybr
 
 ---
 
-## 🖥️ Usage
+## Usage
 
 ### Run the Dashboard (Recommended)
 
@@ -85,7 +85,7 @@ python evaluate_rag.py
 
 ---
 
-## 📊 Evaluation Metrics explained
+## Evaluation Metrics explained
 
 This system uses **DeepEval** to ensure zero hallucinations:
 
@@ -96,7 +96,7 @@ This system uses **DeepEval** to ensure zero hallucinations:
 
 ---
 
-## 🗺️ Architecture Diagram
+## Architecture Diagram
 
 ```mermaid
 graph TD
@@ -113,7 +113,7 @@ graph TD
 
 ---
 
-## 🔄 CI/CD Pipeline (GitHub Actions)
+## CI/CD Pipeline (GitHub Actions)
 
 This project uses a **3-job automated pipeline** triggered on every push and pull request:
 
@@ -127,9 +127,9 @@ graph LR
 
 | Job | Trigger | Description |
 |-----|---------|-------------|
-| **🧪 Lint & Unit Tests** | Every push/PR | Installs deps on Python 3.12, runs `pytest` against all unit tests |
-| **📊 DeepEval Evaluation** | Manual only | Runs the full 7-query RAG benchmark with Groq LLM judge |
-| **🐳 Docker Build & Push** | Push to `main` | Builds multi-stage Docker image, pushes to GitHub Container Registry |
+| **Lint & Unit Tests** | Every push/PR | Installs deps on Python 3.12, runs `pytest` against all unit tests |
+| **DeepEval Evaluation** | Manual only | Runs the full 7-query RAG benchmark with Groq LLM judge |
+| **Docker Build & Push** | Push to `main` | Builds multi-stage Docker image, pushes to GitHub Container Registry |
 
 ### Setting up Secrets
 
@@ -148,7 +148,7 @@ python -m pytest tests/ -v
 
 ---
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 ### Build & Run with Docker Compose (Recommended)
 
@@ -167,7 +167,7 @@ docker run -p 8501:8501 --env-file .env rag-engine
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 ├── .github/workflows/ci.yml   # CI/CD pipeline
