@@ -54,7 +54,7 @@ jobs:
 
       - name: Run Unit Tests
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          grog: ${{ secrets.GROQ_API_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           python -m pytest tests/ -v --tb=short
@@ -84,7 +84,7 @@ jobs:
 
       - name: Run DeepEval Evaluation
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          grog: ${{ secrets.GROQ_API_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           python evaluate_rag.py
