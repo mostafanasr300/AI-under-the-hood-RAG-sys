@@ -1,0 +1,14 @@
+# Ignore virtual environments and caches during Docker build
+agentic_venv/
+venv/
+__pycache__/
+.pytest_cache/
+.git/
+.gitignore
+.idea/
+.vscode/
+.deepeval/
+faiss_index_cache/
+Companies_reports/
+*.pyc
+*.egg-info/

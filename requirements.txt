@@ -9,7 +9,7 @@ deepeval
 tavily-python
 python-dotenv
 pypdf
-
 langchain-huggingface
 langchain-text-splitters
 streamlit
+pytest
