@@ -162,7 +162,7 @@ Then open `http://localhost:8501` in your browser.
 
 ```bash
 docker build -t rag-engine .
-docker run -p 8501:8501 --env-file .env rag-engine
+docker run -p 8501:8501 --env-file .env -v ./Data:/app/Data rag-engine
 ```
 
 ---
