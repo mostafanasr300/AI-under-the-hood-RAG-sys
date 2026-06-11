@@ -1,3 +1,15 @@
+import signal
+
+# Monkey-patch signal.signal to catch ValueError in non-main threads (e.g. under Streamlit)
+_original_signal = signal.signal
+def _safe_signal(signalnum, handler):
+    try:
+        return _original_signal(signalnum, handler)
+    except ValueError:
+        # Ignore: signal only works in main thread of the main interpreter
+        return None
+signal.signal = _safe_signal
+
 import streamlit as st
 import time
 import os
