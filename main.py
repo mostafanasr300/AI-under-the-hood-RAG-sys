@@ -345,9 +345,112 @@ def _save_cache(cache_dir, vectorstore, documents, hashes, hash_file, chunks_fil
     print("FAISS index + document chunks + file hashes cached locally.")
 
 
+# ── Runtime container (allows hot-swap from Streamlit without a restart) ──
+_state = {"retriever": None}   # mutable dict so other modules share the reference
+
+
+def get_retriever():
+    """Return the currently active HybridRetriever instance."""
+    return _state["retriever"]
+
+
+def incremental_add_document(file_path: str, category: str):
+    """
+    Incrementally index a single new PDF into the running system.
+
+    Steps:
+      1. Load & chunk the new PDF.
+      2. Embed it and merge into the existing FAISS index in-memory.
+      3. Rebuild the BM25 index over all documents (fast, no re-embedding).
+      4. Persist updated FAISS + chunks + hash manifest to disk.
+      5. Hot-swap the global retriever so all subsequent LangGraph calls
+         use the updated knowledge base immediately.
+
+    Args:
+        file_path : Absolute or relative path to the new PDF file.
+        category  : "ML" or "math" — used as document metadata.
+
+    Returns:
+        dict with keys:
+            "chunks_added" (int)  — number of new text chunks indexed
+            "total_chunks" (int)  — total chunks in knowledge base after update
+    """
+    current_retriever = _state["retriever"]
+    if current_retriever is None:
+        raise RuntimeError("Retriever not initialised. Call build_knowledge_base() first.")
+
+    norm_path = os.path.normpath(file_path)
+
+    # ── 1. Load embeddings (reuse existing model; no re-download) ──
+    embeddings = current_retriever.vectorstore.embeddings
+
+    # ── 2. Chunk the new document ──
+    try:
+        loader = PyPDFLoader(norm_path)
+        raw_docs = loader.load()
+    except Exception as exc:
+        raise RuntimeError(f"Failed to load PDF '{file_path}': {exc}") from exc
+
+    for doc in raw_docs:
+        doc.metadata["category"]    = category
+        doc.metadata["source_file"] = os.path.basename(norm_path)
+
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    new_chunks = text_splitter.split_documents(raw_docs)
+
+    if not new_chunks:
+        raise RuntimeError("The PDF yielded no text chunks after splitting.")
+
+    print(f"   [Incremental] {len(new_chunks)} chunks from '{os.path.basename(norm_path)}'")
+
+    # ── 3. Embed & merge into existing FAISS index ──
+    new_store = FAISS.from_documents(new_chunks, embeddings)
+    current_retriever.vectorstore.merge_from(new_store)
+    print("   [Incremental] Merged into existing FAISS index.")
+
+    # ── 4. Extend the document list and rebuild BM25 (in-memory, fast) ──
+    current_retriever.documents = current_retriever.documents + new_chunks
+    tokenized_corpus = [doc.page_content.lower().split() for doc in current_retriever.documents]
+    current_retriever.bm25 = BM25Okapi(tokenized_corpus)
+    total_chunks = len(current_retriever.documents)
+    print(f"   [Incremental] BM25 rebuilt over {total_chunks} total chunks.")
+
+    # ── 5. Persist updated cache ──
+    CACHE_DIR  = "faiss_index_cache"
+    HASH_FILE  = os.path.join(CACHE_DIR, "file_hashes.json")
+    CHUNKS_FILE = os.path.join(CACHE_DIR, "document_chunks.pkl")
+
+    # Update FAISS index on disk
+    current_retriever.vectorstore.save_local(CACHE_DIR)
+
+    # Update document chunks
+    with open(CHUNKS_FILE, "wb") as f:
+        pickle.dump(current_retriever.documents, f)
+
+    # Update hash manifest
+    cached_hashes = {}
+    if os.path.exists(HASH_FILE):
+        with open(HASH_FILE, "r") as fh:
+            cached_hashes = json.load(fh)
+
+    file_hash = compute_file_hash(norm_path)
+    cached_hashes[norm_path] = file_hash
+
+    with open(HASH_FILE, "w") as fh:
+        json.dump(cached_hashes, fh, indent=2)
+
+    print("   [Incremental] Cache updated (FAISS + chunks + hashes).")
+
+    # ── 6. Retriever is already mutated in-place; no swap needed ──
+    print("   [Incremental] New document is immediately available for retrieval.")
+
+    return {"chunks_added": len(new_chunks), "total_chunks": total_chunks}
+
+
 # --- Boot ---
 print("Booting up AI Knowledge Engine...\n")
-retriever = build_knowledge_base()
+_state["retriever"] = build_knowledge_base()
+retriever = _state["retriever"]   # keep top-level name for backward compatibility
 
 
 # ============================================================
@@ -403,7 +506,8 @@ def internal_analyst_node(state: AgentState):
     current_context = state.get("context_data", "")
     
     # Do exactly ONE targeted retrieval using the raw user query for best Cross-Encoder accuracy
-    docs = retriever.invoke(state["user_query"])
+    # Always fetch the live retriever (may have been updated by an incremental upload)
+    docs = get_retriever().invoke(state["user_query"])
     
     internal_results = ""
     if docs:

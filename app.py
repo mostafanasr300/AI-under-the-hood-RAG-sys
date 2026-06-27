@@ -13,7 +13,8 @@ signal.signal = _safe_signal
 import streamlit as st
 import time
 import os
-from main import app_multi_agent, get_env
+from main import app_multi_agent, get_env, incremental_add_document
+from document_validator import validate_file, validate_topic
 from evaluate_rag import extract_context_chunks, custom_eval_model
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import (
@@ -59,6 +60,38 @@ st.markdown("""
         border-left: 5px solid #4a90e2;
         background-color: #161b22;
     }
+    /* Category card styles */
+    .cat-card {
+        border-radius: 12px;
+        padding: 18px 14px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+        margin-bottom: 6px;
+    }
+    .cat-card-ml {
+        background: linear-gradient(135deg, #1a1f3a 0%, #0f3460 100%);
+        border-color: #4a90e2;
+    }
+    .cat-card-math {
+        background: linear-gradient(135deg, #1a2d1a 0%, #1b4332 100%);
+        border-color: #2ecc71;
+    }
+    .cat-card-selected-ml {
+        background: linear-gradient(135deg, #1e3a6e 0%, #2563eb 100%);
+        border-color: #60a5fa;
+        box-shadow: 0 0 16px rgba(96,165,250,0.35);
+    }
+    .cat-card-selected-math {
+        background: linear-gradient(135deg, #14532d 0%, #16a34a 100%);
+        border-color: #4ade80;
+        box-shadow: 0 0 16px rgba(74,222,128,0.35);
+    }
+    .cat-icon { font-size: 2.2rem; margin-bottom: 6px; }
+    .cat-label { font-weight: 700; font-size: 0.95rem; color: #e2e8f0; }
+    .cat-sub   { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; }
+    .val-step  { font-size: 0.82rem; padding: 4px 0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,6 +121,201 @@ with st.sidebar:
     }
     
     selected_predef = st.selectbox("Quick Select Query", options=["None"] + list(predefined_queries.keys()))
+
+    # ── ── ── Upload Section ── ── ──
+    st.divider()
+    with st.expander("📤 Upload New Document", expanded=False):
+        st.markdown(
+            "<p style='font-size:0.82rem;color:#94a3b8;margin-bottom:10px;'>"
+            "Expand the knowledge base at runtime. The document will be validated "
+            "and indexed immediately — no restart needed."
+            "</p>",
+            unsafe_allow_html=True,
+        )
+
+        # ── Category selection ──
+        st.markdown(
+            "<p style='font-size:0.88rem;font-weight:600;color:#cbd5e1;margin-bottom:6px;'>"
+            "Select document category:"
+            "</p>",
+            unsafe_allow_html=True,
+        )
+
+        cat_col1, cat_col2 = st.columns(2)
+        if "upload_category" not in st.session_state:
+            st.session_state.upload_category = None
+
+        with cat_col1:
+            ml_selected = st.session_state.upload_category == "ML"
+            card_cls = "cat-card cat-card-selected-ml" if ml_selected else "cat-card cat-card-ml"
+            st.markdown(
+                f"""<div class="{card_cls}">
+                    <div class="cat-icon">🧠</div>
+                    <div class="cat-label">Machine Learning</div>
+                    <div class="cat-sub">DPO · LoRA · GRPO · LLMs</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            if st.button("Select ML", key="btn_cat_ml", use_container_width=True):
+                st.session_state.upload_category = "ML"
+                st.rerun()
+
+        with cat_col2:
+            math_selected = st.session_state.upload_category == "math"
+            card_cls = "cat-card cat-card-selected-math" if math_selected else "cat-card cat-card-math"
+            st.markdown(
+                f"""<div class="{card_cls}">
+                    <div class="cat-icon">📐</div>
+                    <div class="cat-label">Absolute Math</div>
+                    <div class="cat-sub">Algebra · Calculus · Stats</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            if st.button("Select Math", key="btn_cat_math", use_container_width=True):
+                st.session_state.upload_category = "math"
+                st.rerun()
+
+        # Show which category is active
+        chosen_cat = st.session_state.upload_category
+        if chosen_cat == "ML":
+            st.success("🧠 **Machine Learning** selected")
+        elif chosen_cat == "math":
+            st.success("📐 **Absolute Math** selected")
+        else:
+            st.info("☝️ Please select a category above.")
+
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+
+        # ── File uploader ──
+        uploaded_file = st.file_uploader(
+            "Choose a PDF file",
+            type=["pdf"],
+            key="pdf_uploader",
+            label_visibility="collapsed",
+        )
+
+        upload_btn = st.button(
+            "🚀 Validate & Index Document",
+            key="upload_btn",
+            use_container_width=True,
+            disabled=(uploaded_file is None or chosen_cat is None),
+        )
+
+        # ── Upload pipeline ──
+        if upload_btn and uploaded_file and chosen_cat:
+            file_bytes = uploaded_file.read()
+            filename   = uploaded_file.name
+
+            with st.status("🔍 Processing document...", expanded=True) as upload_status:
+
+                # Step 1 — File Validation
+                st.write("**Step 1/3** — File validation...")
+                file_ok, file_err = validate_file(file_bytes, filename)
+
+                if not file_ok:
+                    upload_status.update(
+                        label="❌ Validation failed", state="error", expanded=True
+                    )
+                    st.error(f"🚫 **File rejected:** {file_err}")
+                    st.stop()
+
+                st.write("✅ File checks passed (format · size · readability · dedup)")
+
+                # Step 2 — Topic Validation
+                st.write(f"**Step 2/3** — Topic classification (selected: **{chosen_cat}**)...")
+                try:
+                    groq_key = get_env("grog")
+                    topic_result = validate_topic(
+                        file_bytes=file_bytes,
+                        filename=filename,
+                        selected_category=chosen_cat,
+                        groq_api_key=groq_key,
+                    )
+                except Exception as exc:
+                    upload_status.update(
+                        label="❌ Topic check failed", state="error", expanded=True
+                    )
+                    st.error(f"🚫 **Topic validation error:** {exc}")
+                    st.stop()
+
+                if not topic_result["accepted"]:
+                    upload_status.update(
+                        label="❌ Document rejected", state="error", expanded=True
+                    )
+                    st.error(
+                        f"🚫 **Document rejected** — the content does not belong to ML or Math.\n\n"
+                        f"**Confidence:** {topic_result['confidence']:.0%}\n\n"
+                        f"**Reason:** {topic_result['reason']}"
+                    )
+                    st.stop()
+
+                # Detected category is valid — may have been redirected
+                actual_cat = topic_result["actual_category"]
+                if topic_result["redirected"]:
+                    st.warning(
+                        f"⚠️ **Category mismatch detected!**\n\n"
+                        f"You selected **{chosen_cat}** but the document was identified as "
+                        f"**{actual_cat}** "
+                        f"(confidence: {topic_result['confidence']:.0%}).\n\n"
+                        f"The file will be indexed under **{actual_cat}** instead. "
+                        f"Reason: {topic_result['reason']}"
+                    )
+                else:
+                    st.write(
+                        f"✅ Topic verified as **{actual_cat}** "
+                        f"(confidence: {topic_result['confidence']:.0%})"
+                    )
+
+                # Step 3 — Save & Incremental Index
+                st.write("**Step 3/3** — Saving and indexing...")
+
+                # Save PDF to the correct Data/ subfolder
+                save_dir = os.path.join("Data", actual_cat)
+                os.makedirs(save_dir, exist_ok=True)
+                save_path = os.path.join(save_dir, filename)
+
+                with open(save_path, "wb") as out:
+                    out.write(file_bytes)
+
+                # Incremental indexing (no rebuild)
+                try:
+                    result = incremental_add_document(
+                        file_path=save_path,
+                        category=actual_cat,
+                    )
+                except Exception as exc:
+                    # Clean up saved file if indexing fails
+                    if os.path.exists(save_path):
+                        os.remove(save_path)
+                    upload_status.update(
+                        label="❌ Indexing failed", state="error", expanded=True
+                    )
+                    st.error(f"🚫 **Indexing error:** {exc}")
+                    st.stop()
+
+                upload_status.update(
+                    label="✅ Document indexed successfully!",
+                    state="complete",
+                    expanded=False,
+                )
+
+            # ── Success summary ──
+            icon = "🧠" if actual_cat == "ML" else "📐"
+            redirect_note = (
+                f"\n> ⚠️ Redirected from **{chosen_cat}** → **{actual_cat}** "
+                "based on document content."
+                if topic_result["redirected"] else ""
+            )
+            st.success(
+                f"{icon} **{filename}** has been added to the **{actual_cat}** knowledge base!\n\n"
+                f"- **New chunks indexed:** {result['chunks_added']}\n"
+                f"- **Total knowledge base size:** {result['total_chunks']} chunks\n"
+                f"- **Immediately available** for search & retrieval."
+                f"{redirect_note}"
+            )
+            # Reset uploader state
+            st.session_state.upload_category = None
+
 
 # --- Main Interface ---
 st.title("🤖 Agentic Hybrid RAG Engine")
