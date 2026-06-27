@@ -31,6 +31,7 @@ FROM deps AS production
 COPY main.py .
 COPY evaluate_rag.py .
 COPY app.py .
+COPY document_validator.py .
 COPY .streamlit/ .streamlit/
 
 # Copy PDF data for the knowledge base

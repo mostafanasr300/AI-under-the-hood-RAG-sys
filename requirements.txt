@@ -13,3 +13,4 @@ langchain-huggingface
 langchain-text-splitters
 streamlit
 pytest
+torchvision
