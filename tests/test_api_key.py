@@ -3,8 +3,8 @@ CI Gate: LLM API Key Validation Test
 =====================================
 Validates that the Groq API key (grog env var) is:
   1. Present in the environment
-  2. Valid — by making a minimal, real API call to openai/gpt-oss-120b
-  3. Authorized for the correct model
+  2. Valid — by making a minimal, real API call to both RAG models
+  3. Authorized for both openai/gpt-oss-120b and qwen/qwen3.6-27b
 
 This test runs as a REQUIRED gate before the Docker image is built and
 pushed to GHCR. If the key is missing or rejected, the whole CI pipeline
@@ -16,11 +16,16 @@ This test is skipped gracefully in offline / mock environments.
 import os
 import sys
 import pytest
+from dotenv import load_dotenv
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-MODEL = "openai/gpt-oss-120b"
+# Load environment variables from .env
+load_dotenv()
+
+
+MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.6-27b"]
 
 
 # ============================================================
@@ -71,7 +76,7 @@ class TestApiKeyPresence:
 class TestApiKeyLiveValidation:
     """
     Makes a real, minimal API call to verify the key is accepted
-    and the target model is accessible.
+    and the target models are accessible.
 
     Skipped automatically if the key is absent (caught by presence tests).
     """
@@ -82,9 +87,10 @@ class TestApiKeyLiveValidation:
         if not _get_groq_key():
             pytest.skip("GROQ_API_KEY not set — skipping live validation.")
 
-    def test_model_reachable_and_key_accepted(self):
+    @pytest.mark.parametrize("model_name", MODELS)
+    def test_model_reachable_and_key_accepted(self, model_name):
         """
-        Call openai/gpt-oss-120b with a single-token prompt.
+        Call the models with a single-token prompt.
         A 200 response confirms both key validity and model availability.
         """
         from groq import Groq, AuthenticationError, NotFoundError, PermissionDeniedError
@@ -93,7 +99,7 @@ class TestApiKeyLiveValidation:
 
         try:
             response = client.chat.completions.create(
-                model=MODEL,
+                model=model_name,
                 messages=[{"role": "user", "content": "ping"}],
                 max_tokens=1,          # Absolute minimum — fast & cheap
                 temperature=0.0,
@@ -106,13 +112,13 @@ class TestApiKeyLiveValidation:
             )
         except NotFoundError as exc:
             pytest.fail(
-                f"Model '{MODEL}' was NOT FOUND on Groq.\n"
+                f"Model '{model_name}' was NOT FOUND on Groq.\n"
                 f"The model name may have changed or is not available on your plan.\n"
                 f"Details: {exc}"
             )
         except PermissionDeniedError as exc:
             pytest.fail(
-                f"GROQ_API_KEY does not have permission to use '{MODEL}'.\n"
+                f"GROQ_API_KEY does not have permission to use '{model_name}'.\n"
                 f"Details: {exc}"
             )
 
@@ -120,7 +126,8 @@ class TestApiKeyLiveValidation:
         assert response.choices, "API returned an empty choices list."
         assert response.model, "API response missing model field."
 
-    def test_response_model_matches_expected(self):
+    @pytest.mark.parametrize("model_name", MODELS)
+    def test_response_model_matches_expected(self, model_name):
         """
         The model returned in the response should match what we requested.
         Guards against silent model routing / aliasing issues.
@@ -129,13 +136,14 @@ class TestApiKeyLiveValidation:
 
         client = Groq(api_key=_get_groq_key())
         response = client.chat.completions.create(
-            model=MODEL,
+            model=model_name,
             messages=[{"role": "user", "content": "ping"}],
             max_tokens=1,
             temperature=0.0,
         )
         returned_model = response.model or ""
-        assert MODEL in returned_model or returned_model in MODEL, (
-            f"Requested model '{MODEL}' but got '{returned_model}' in response. "
+        assert model_name in returned_model or returned_model in model_name, (
+            f"Requested model '{model_name}' but got '{returned_model}' in response. "
             "Possible routing mismatch — verify the model name."
         )
+

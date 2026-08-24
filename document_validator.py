@@ -226,7 +226,7 @@ def validate_topic(
     )
 
     llm = ChatGroq(
-        model_name="openai/gpt-oss-120b",
+        model_name="qwen/qwen3.6-27b",
         temperature=0.0,
         api_key=groq_api_key,
     )

@@ -106,7 +106,7 @@ with st.sidebar:
     
     if eval_enabled:
         st.warning("⚠️ Evaluation adds ~2-3 minutes of delay due to sequential rate-limiting (Groq TPM).")
-        st.write("Judge Model: gpt-oss-120b")
+        st.write("Judge Model: qwen/qwen3.6-27b")
 
     st.divider()
     st.markdown("### Predefined Test Cases")
@@ -389,7 +389,7 @@ if run_btn and user_query:
         else:
             st.divider()
             st.subheader("📊 DeepEval Metric Dashboard")
-            st.caption("Judge: gpt-oss-120b | Throttled for Groq API limits")
+            st.caption("Judge: qwen/qwen3.6-27b | Throttled for Groq API limits")
             
             # Extract chunks for metrics
             context_chunks = extract_context_chunks(state["context_data"])
@@ -439,4 +439,4 @@ if run_btn and user_query:
                             time.sleep(38)
 
 st.markdown("---")
-st.caption("Built with LangGraph + DeepEval + Streamlit | Judge: gpt-oss-120b")
+st.caption("Built with LangGraph + DeepEval + Streamlit | Judge: qwen/qwen3.6-27b")
