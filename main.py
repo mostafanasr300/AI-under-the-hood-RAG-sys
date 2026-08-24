@@ -467,7 +467,7 @@ class AgentState(TypedDict):
     new_search_query: str
 
 
-llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0.2,
+llm = ChatGroq(model_name="openai/gpt-oss-120b", temperature=0.2,
                api_key=get_env("grog"))
 
 

@@ -44,10 +44,10 @@ class GroqDeepEvalModel(DeepEvalBaseLLM):
         return res.content
 
     def get_model_name(self):
-        return "llama-3.3-70b-versatile"
+        return "openai/gpt-oss-120b"
 
 # Instantiate our LangChain Groq model
-llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0.0, api_key=get_env("grog"))
+llm = ChatGroq(model_name="openai/gpt-oss-120b", temperature=0.0, api_key=get_env("grog"))
 # Wrap it for DeepEval
 custom_eval_model = GroqDeepEvalModel(llm)
 
