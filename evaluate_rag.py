@@ -44,7 +44,7 @@ class GroqDeepEvalModel(DeepEvalBaseLLM):
         return res.content
 
     def get_model_name(self):
-        return "qwen/qwen3.6-27b"
+        return "qwen/qwen3.8-27b"
 
 # Instantiate our LangChain Groq model
 llm = ChatGroq(model_name="qwen/qwen3.8-27b", temperature=0.0, api_key=get_env("grog"))

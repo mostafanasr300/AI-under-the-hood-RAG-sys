@@ -19,7 +19,7 @@ A high-performance, autonomous Knowledge Engine built with **LangGraph**, **Hybr
   * **Synthesizer:** Crafts high-fidelity technical responses.
   * **Reviewer (The Auditor):** Evaluates responses for gaps and triggers emergency fallback loops.
 * **Emergency Web Fallback:** Automatically executes a surgical **Tavily Web Search** if internal PDFs don't contain the answer.
-* **Industrial Evaluation:** Real-time scoring using **DeepEval** (Faithfulness, Relevance, Precision, Recall) with **Llama-3.3-70b** as the judge.
+* **Industrial Evaluation:** Real-time scoring using **DeepEval** (Faithfulness, Relevance, Precision, Recall) with **qwen3.8-27b** as the judge.
 * **🆕 Dynamic Runtime Upload:** Expand the knowledge base live — upload PDFs, validate them semantically, and make them instantly retrievable, all without restarting the app.
 
 ---
@@ -96,7 +96,7 @@ The upload section lives in the sidebar under **"📤 Upload New Document"**:
 ## Tech Stack
 
 * **Framework:** LangGraph / LangChain
-* **LLMs:** Groq (Llama-3.1-8b for speed and topic classification, Llama-3.3-70b for evaluation)
+* **LLMs:** Groq (openai/gpt-oss-120b for speed and topic classification, qwen3.8-27b for evaluation)
 * **Vector DB:** FAISS (with incremental merge support)
 * **Retrieval:** BM25 + Cross-Encoder Reranking
 * **PDF Parsing:** PyPDF

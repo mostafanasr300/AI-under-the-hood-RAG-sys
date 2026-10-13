@@ -439,4 +439,4 @@ if run_btn and user_query:
                             time.sleep(38)
 
 st.markdown("---")
-st.caption("Built with LangGraph + DeepEval + Streamlit | Judge: qwen/qwen3.6-27b")
+st.caption("Built with LangGraph + DeepEval + Streamlit | Judge: qwen/qwen3.8-27b")
