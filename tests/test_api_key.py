@@ -4,7 +4,7 @@ CI Gate: LLM API Key Validation Test
 Validates that the Groq API key (grog env var) is:
   1. Present in the environment
   2. Valid — by making a minimal, real API call to both RAG models
-  3. Authorized for both openai/gpt-oss-120b and qwen/qwen3.6-27b
+  3. Authorized for both openai/gpt-oss-120b and qwen/qwen3.8-27b
 
 This test runs as a REQUIRED gate before the Docker image is built and
 pushed to GHCR. If the key is missing or rejected, the whole CI pipeline
@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv()
 
 
-MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.6-27b"]
+MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.8-27b"]
 
 
 # ============================================================
